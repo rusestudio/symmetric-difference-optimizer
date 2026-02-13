@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Structure Project Optimization Result</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2em; background: #f9f9f9; }
+        h1 { color: #2c3e50; }
+        .code-block { background: #272822; color: #f8f8f2; padding: 1em; border-radius: 8px; overflow-x: auto; margin-bottom: 2em; }
+        .section { margin-bottom: 2em; }
+        .filename { font-weight: bold; color: #2980b9; }
+        .code-container { display: flex; gap: 2em; }
+        .code-section { flex: 1; }
+        table { width: 100%; border-collapse: collapse; margin-top: 2em; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>Data Structure Project Optimization Result</h1>
+    <div class="code-container">
+        <div class="code-section">
+            <div class="filename">referal.c (Original/Reference Code)</div>
+            <pre class="code-block" id="referal"></pre>
+        </div>
+        <div class="code-section">
+            <div class="filename">1269-202411965.c (Optimized Code)</div>
+            <pre class="code-block" id="optimized"></pre>
+        </div>
+    </div>
+    <div class="section">
+        <h2>Optimization Results</h2>
+        <table>
+            <tr>
+                <th>Problem</th>
+                <th>Original ADT</th>
+                <th>Time</th>
+                <th>Space</th>
+                <th>Proposed ADT</th>
+                <th>Time</th>
+                <th>Space</th>
+            </tr>
+            <tr>
+                <td>1269: symmetric difference</td>
+                <td>BST</td>
+                <td>284ms</td>
+                <td>13524kb</td>
+                <td>Min heap</td>
+                <td>104ms</td>
+                <td>3468kb</td>
+            </tr>
+        </table>
+        <p><strong>Summary:</strong> Min Heap takes 180ms less time which is 2.73 times faster than BST and saves 10074kb memory space which is 3.9 times less memory.</p>
+    </div>
+    <script>
+        // The code contents will be injected here
+        document.getElementById('referal').textContent = `#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct BSTNode {
+    int key;
+    struct BSTNode* left;
+    struct BSTNode* right;
+} BSTNode;
+
+BSTNode* CreateNode(int key) {
+    BSTNode* new_node = (BSTNode*)malloc(sizeof(BSTNode));
+    if (new_node == NULL) {
+        printf("Memory allocation failed\\n");
+        exit(1);
+    }
+    new_node->key = key;
+    new_node->left = NULL;
+    new_node->right = NULL;
+    return new_node;
+}
+
+BSTNode* Insert(BSTNode* root, int key) {
+    if (root == NULL)
+        return CreateNode(key);
+    
+    if (key < root->key)
+        root->left = Insert(root->left, key);
+    else if (key > root->key)
+        root->right = Insert(root->right, key);
+    
+    return root;
+}
+
+int Search(BSTNode* root, int key) {
+    if (root == NULL)
+        return 0;
+    
+    if (root->key == key)
+        return 1;
+    
+    if (key > root->key)
+        return Search(root->right, key);
+    
+    return Search(root->left, key);
+}
+
+int CountNodes(BSTNode* root) {
+    if (root == NULL)
+        return 0;
+    return 1 + CountNodes(root->left) + CountNodes(root->right);
+}
+
+void FreeBST(BSTNode* root) {
+    if (root == NULL)
+        return;
+    
+    FreeBST(root->left);
+    FreeBST(root->right);
+    free(root);
+}
+
+int main() {
+    int size_a, size_b;
+    scanf("%d %d", &size_a, &size_b);
+    
+    BSTNode* set_a = NULL;
+    BSTNode* set_b = NULL;
+    
+    for (int i = 0; i < size_a; i++) {
+        int element;
+        scanf("%d", &element);
+        set_a = Insert(set_a, element);
+    }
+    
+    int in_both_sets = 0;
+    
+    for (int i = 0; i < size_b; i++) {
+        int element;
+        scanf("%d", &element);
+        
+        if (Search(set_a, element)) {
+            in_both_sets++;
+        } else {
+            set_b = Insert(set_b, element);
+        }
+    }
+    
+    int only_in_a = CountNodes(set_a) - in_both_sets;
+    int only_in_b = CountNodes(set_b);
+    
+    printf("%d\\n", only_in_a + only_in_b);
+    
+    FreeBST(set_a);
+    FreeBST(set_b);
+    
+    return 0;
+}`;
+        document.getElementById('optimized').textContent = `#include <stdio.h>
+#include <stdlib.h>
+
+//minheap struct
+typedef struct {
+    int *data; //arr
+    int size; //number of data in arr
+    int capacity; //length of arry
+} MinHeap;
+
+
+MinHeap* createHeap(int capacity) {
+    //make table
+    MinHeap *heap = (MinHeap*)malloc(sizeof(MinHeap));
+    //initialize data[index]. +1 coz index start w 1
+    heap->data = (int*)malloc((capacity+1) * sizeof(int));
+    heap->size = 0;
+    heap->capacity = capacity;
+    return heap;
+}
+
+void insert(MinHeap *heap, int value) {
+    if (heap->size >= heap->capacity) return; //full
+    
+    //add at end
+    heap->size++;
+    heap->data[heap->size] = value;
+    heapifyUp(heap, heap->size);
+}
+
+
+void heapifyUp(MinHeap *heap, int index) {
+    //go up if data smaller
+    if (index > 1 && heap->data[index] < heap->data[index/2]) {
+        swap(&heap->data[index], &heap->data[index/2]);
+        heapifyUp(heap, index/2);
+    }
+}
+
+
+void swap(int *a, int *b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+
+int extractMin(MinHeap *heap) {
+    if (heap->size == 0) return -1;
+    
+    int min = heap->data[1]; //get smallest 
+    heap->data[1] = heap->data[heap->size];
+    heap->size--; //decrease size
+    heapifyDown(heap, 1);
+    
+    return min;
+}
+
+void heapifyDown(MinHeap *heap, int index) {
+    int smallest = index;
+    int left = index*2;
+    int right = index*2 +1;
+    
+    if (left <= heap->size && heap->data[left] < heap->data[smallest])
+        smallest = left;
+    
+    if (right <= heap->size && heap->data[right] < heap->data[smallest])
+        smallest = right;
+    
+    //go down if data bigger
+    if (smallest != index) {
+        swap(&heap->data[index], &heap->data[smallest]);
+        heapifyDown(heap, smallest);
+    }
+}
+
+
+void heapSort(int arr[], int n) {
+    MinHeap *heap = createHeap(n);
+
+    //insert data into heap
+      for (int i = 0; i < n; i++) {
+        insert(heap, arr[i]);
+    }
+    
+
+    //extract elemet in sorted ord
+    for (int i = 0; i < n; i++) {
+        arr[i] = extractMin(heap); //sort data
+    }
+    
+    free(heap->data);
+    free(heap);
+}
+
+
+int main() {
+    int n, m;
+    scanf("%d %d", &n, &m);
+    
+    int *a = (int*)malloc(n * sizeof(int));
+    int *b = (int*)malloc(m * sizeof(int));
+    
+
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &a[i]);
+    }
+    
+
+    for (int i = 0; i < m; i++) {
+        scanf("%d", &b[i]);
+    }
+    
+
+    heapSort(a, n);
+    heapSort(b, m);
+    
+
+    int i = 0, j = 0;
+    int symmetric_diff_count = 0;
+    
+    while (i < n && j < m) {
+        if (a[i] == b[j]) { //element in both a b
+            i++; //move pointer (skip coz same)
+            j++;
+        } else if (a[i] < b[j]) { //element in a but not in b
+            symmetric_diff_count++; //counter ++
+            i++; //move pointer
+        } else {
+            symmetric_diff_count++; //elem in b but not in a, counter ++
+            j++; //move pointer
+        }
+    }
+    
+    symmetric_diff_count += (n - i) + (m - j); //add the rest
+    
+    printf("%d\\n", symmetric_diff_count);
+    
+    free(a);
+    free(b);
+    
+    return 0;
+}`;
+    </script>
+</body>
+</html>
